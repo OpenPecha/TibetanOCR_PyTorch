@@ -1,0 +1,1 @@
+DEFAULT_CHARSET = " !#%'()+-./0123456789:=?@ADHIMNRSTUWXY[\\]_abcdefghijklmnoprstuwyz|~&äüö<>;"
