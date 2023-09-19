@@ -8,7 +8,7 @@ import albumentations
 from typing import Optional
 from torch.utils.data import Dataset
 from src.Utils import resize_n_pad
-
+from config import DEFAULT_CHARSET
 
 
 class CTCDataset(Dataset):
@@ -16,7 +16,7 @@ class CTCDataset(Dataset):
         self,
         images: list,
         labels: list,
-        charset: str = " !#%'()+-./0123456789:=?@ADHIMNRSTUWXY[\\]_abcdefghijklmnoprstuwyz|~",
+        charset: str = DEFAULT_CHARSET,
         img_height: int = 80,
         img_width: int = 2000,
         augmentations: Optional[list[str]] = None,

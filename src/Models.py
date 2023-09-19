@@ -19,7 +19,8 @@ class ConvRelu(nn.Module):
                  kernel: int = 3, 
                  strides: int = 1, 
                  padding: int = 1, 
-                 use_bn: bool = False, 
+                 use_bn: bool = False,
+                 dropout_rate: float = 0.2, 
                  leaky_relu: bool = False):
         super(ConvRelu, self).__init__()
         
@@ -27,6 +28,7 @@ class ConvRelu(nn.Module):
         self.use_bn = use_bn
         self.bn = nn.BatchNorm2d(num_features=out_channels)
         self.leaky_relu = leaky_relu
+        self.dropout = nn.Dropout(p=dropout_rate)
         self.out_channels = out_channels
 
     def forward(self, x):
@@ -39,7 +41,8 @@ class ConvRelu(nn.Module):
             x = nn.LeakyReLU(negative_slope=0.2)(x)
         else:
             x = nn.ReLU(inplace=True)(x)
-        
+        x = self.dropout(x)
+
         return x
 
 

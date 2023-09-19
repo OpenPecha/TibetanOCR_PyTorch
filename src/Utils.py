@@ -161,8 +161,8 @@ def clean_unicode_label(l, full_bracket_removal: bool = True):
         l = re.sub("[()]", "", l)
     return l
 
-
-def post_process_wylie(l):
+"""
+def post_process_wylie(l: str):
     l = l.replace("\\u0f85", "&")
     l = l.replace("\\u0f09", "ä")
     l = l.replace("\\u0f13", "ö")
@@ -171,6 +171,18 @@ def post_process_wylie(l):
     l = l.replace("  ", " ")
     l = re.sub("[\[(].*?[\])]", "", l)
 
+    return l
+"""
+
+def post_process_wylie(l):
+    l = l.replace("\\u0f85", "&")
+    l = l.replace("\\u0f09", "ä")
+    l = l.replace("\\u0f13", "ö")
+    l = l.replace("\\u0f12", "ü")
+    l = l.replace("_", " ")
+    l = l.replace("  ", " ")
+    l = l.replace(" ", "§")
+    l = re.sub("[\[(].*?[\])]", "", l)
     return l
 
 
