@@ -8,6 +8,7 @@ A simple OCR Trainer class.
 
 """
 import os
+import sys
 import torch
 import pyewts
 import logging
@@ -310,6 +311,7 @@ class OCRTrainer:
         learning_rate: float = 0.0005,
         optimizer: str = "rmsprop",
         ctc_loss_reduction: str = "sum",
+        model_checkpoint: str = None
     ):
         torch.cuda.empty_cache()
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -318,12 +320,22 @@ class OCRTrainer:
         network = VanillaCRNN(
             img_height=self.image_height,
             img_width=self.image_width,
-            charset_size=len(self.charset),
+            charset_size=len(self.charset)+1,
             map_to_seq_hidden=hidden_units,
             rnn_hidden=rnn_units,
             leaky_relu=use_leaky_relu,
             rnn=rnn_type,
         )
+
+        if model_checkpoint is not None:
+            try:
+                logging.info(f"Loading checkpoint: {model_checkpoint}")
+                loaded_checkpt = torch.load(model_checkpoint)
+                network.load_state_dict(loaded_checkpt['state_dict'])
+                logging.info("Successfully loaded provided checkpoint. Fine tuning model...")
+            except BaseException as e:
+                logging.info(f"Failed to load model checkpoint, training from scratch: {e}")
+                sys.exit(1)
 
         network.to(device)
 
