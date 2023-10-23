@@ -1,10 +1,7 @@
-import re
+
 import cv2
-import numpy as np
 import torch
 import pyewts
-from PIL import Image
-import albumentations
 from typing import Optional
 from torch.utils.data import Dataset
 from src.Utils import resize_n_pad
@@ -43,10 +40,10 @@ class CTCDataset(Dataset):
             image,
             target_width=self.img_width,
             target_height=self.img_height,
-            padding="white",
+            padding="black",
         )
         image = image.reshape((1, self.img_height, self.img_width))
-        image = (image / 127.5) - 1.0  # TOOD: use albumentions for normalization and other augmentations
+        image = (image / 127.5) - 1.0
         image = torch.FloatTensor(image)
 
         target = [self.encode_label[c] for c in self.labels[index]]

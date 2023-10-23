@@ -51,6 +51,3 @@ if __name__ == "__main__":
 
     ocr_trainer = OCRTrainer(images, labels, output_dir=output_dir)
     ocr_trainer.train()
-
-
-    

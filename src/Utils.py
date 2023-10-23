@@ -197,7 +197,6 @@ def read_data(
     Reads all labels into memory, filter labels for min_label_length and max_label_length.
     # TODO:
     1) convert the training labels to wylie ahead of training and clean them up avoiding multiple checks while reading the dataset
-    2) read and encode them more efficiently via tf.keras.layers.TextVectorization
 
     """
     labels = []

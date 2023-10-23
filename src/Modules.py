@@ -37,11 +37,18 @@ class OCRTrainer:
         batch_size: int = 32,
         output_dir: str = "Output",
         charset: str = DEFAULT_CHARSET,
+        max_label_length: int = 240,
+        min_label_length: int = 30,
+        train_val_split_ratio: float = 0.2
     ):
         self.model = None
         self.image_paths = image_paths
         self.label_paths = label_paths
+        self.max_label_length = max_label_length
+        self.min_label_length = min_label_length
         self.train_val_split = train_val_split
+        self.batch_size = batch_size
+        self.train_val_split = train_val_split_ratio
         self.training_time = datetime.now()
         self.output_dir = self.create_output_dir(output_dir)
 
@@ -117,10 +124,10 @@ class OCRTrainer:
         self._save_dataset()
 
         self.train_images, self.train_labels = read_data(
-            self.train_images, self.train_labels, self.converter
+            self.train_images, self.train_labels, self.converter, min_label_length=self.min_label_length, max_label_length=self.max_label_length
         )
         self.valid_images, self.valid_labels = read_data(
-            self.valid_images, self.valid_labels, self.converter
+            self.valid_images, self.valid_labels, self.converter, min_label_length=self.min_label_length, max_label_length=self.max_label_length
         )
 
         train_dataset = CTCDataset(
@@ -290,10 +297,10 @@ class OCRTrainer:
         network_info_file = f"{self.output_dir}/val_losses.txt"
 
         with open(train_losses_file, "w") as f:
-            f.write(train_losses)
+            f.write(str(train_losses))
 
         with open(val_losses_file, "w") as f:
-            f.write(val_losses)
+            f.write(str(val_losses))
 
         with open(network_info_file, "w") as f:
             f.write(str(network))
@@ -332,7 +339,29 @@ class OCRTrainer:
                 logging.info(f"Loading checkpoint: {model_checkpoint}")
                 loaded_checkpt = torch.load(model_checkpoint)
                 network.load_state_dict(loaded_checkpt['state_dict'])
+                
+                for param in network.parameters():
+                    param.requires_grad = False
+
+
+                for param in network.dense.parameters():
+                    param.requires_grad = True
+
+                for param in network.rnn2.parameters():
+                    param.requires_grad = True
+
+                for param in network.rnn1.parameters():
+                    param.requires_grad = True
+
+                for param in network.linear.parameters():
+                    param.requires_grad = True
+
+                for param in network.conv_block_6.parameters():
+                    param.requires_grad = True
+
                 logging.info("Successfully loaded provided checkpoint. Fine tuning model...")
+
+
             except BaseException as e:
                 logging.info(f"Failed to load model checkpoint, training from scratch: {e}")
                 sys.exit(1)
@@ -340,7 +369,7 @@ class OCRTrainer:
         network.to(device)
 
         if optimizer == "rmsprop":
-            optimizer = RMSprop(network.parameters(), lr=learning_rate)
+            optimizer = RMSprop(network.parameters(), lr=learning_rate, centered=True)
         elif optimizer == "adam":
             optimizer = Adam(network.parameters(), lr=learning_rate)
         else:
