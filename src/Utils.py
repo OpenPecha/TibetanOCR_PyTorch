@@ -15,6 +15,7 @@ def create_dir(dir_path: str) -> None:
     except BaseException as e:
         logging.error(f"Failed to create directory: {e}")
 
+
 def get_filename(x):
     return os.path.basename(x).split(".")[0]
 
@@ -78,14 +79,13 @@ def resize_to_width(image, target_width: int):
     return image
 
 
-
 def resize(img: np.array, target_width: int, target_height: int):
     width_ratio = target_width / img.shape[1]
     height_ratio = target_height / img.shape[0]
 
-    if width_ratio < height_ratio: # maybe handle equality separately
+    if width_ratio < height_ratio:  # maybe handle equality separately
         tmp_img = resize_to_width(img, target_width)
-    
+
     elif width_ratio > height_ratio:
         tmp_img = resize_to_height(img, target_height)
 
@@ -95,7 +95,9 @@ def resize(img: np.array, target_width: int, target_height: int):
     return cv2.resize(tmp_img, (target_width, target_height))
 
 
-def resize_n_pad(img: np.array, target_width: int, target_height: int, padding: str) -> np.array:
+def resize_n_pad(
+    img: np.array, target_width: int, target_height: int, padding: str
+) -> np.array:
     """
     Preliminary implementation of resizing and padding images.
     Args:
@@ -106,24 +108,32 @@ def resize_n_pad(img: np.array, target_width: int, target_height: int, padding: 
     width_ratio = target_width / img.shape[1]
     height_ratio = target_height / img.shape[0]
 
-    if width_ratio < height_ratio: # maybe handle equality separately
+    if width_ratio < height_ratio:  # maybe handle equality separately
         tmp_img = resize_to_width(img, target_width)
 
         if padding == "white":
-            v_stack = np.ones((target_height-tmp_img.shape[0], tmp_img.shape[1]), dtype=np.uint8)
+            v_stack = np.ones(
+                (target_height - tmp_img.shape[0], tmp_img.shape[1]), dtype=np.uint8
+            )
         else:
-            v_stack = np.zeros((target_height-tmp_img.shape[0], tmp_img.shape[1]), dtype=np.uint8)
+            v_stack = np.zeros(
+                (target_height - tmp_img.shape[0], tmp_img.shape[1]), dtype=np.uint8
+            )
         v_stack *= 255
 
         out_img = np.vstack([v_stack, tmp_img])
 
     elif width_ratio > height_ratio:
         tmp_img = resize_to_height(img, target_height)
-        
+
         if padding == "white":
-            h_stack = np.ones((tmp_img.shape[0], target_width-tmp_img.shape[1]), dtype=np.uint8)
+            h_stack = np.ones(
+                (tmp_img.shape[0], target_width - tmp_img.shape[1]), dtype=np.uint8
+            )
         else:
-            h_stack = np.zeros((tmp_img.shape[0], target_width-tmp_img.shape[1]), dtype=np.uint8)
+            h_stack = np.zeros(
+                (tmp_img.shape[0], target_width - tmp_img.shape[1]), dtype=np.uint8
+            )
         h_stack *= 255
 
         out_img = np.hstack([tmp_img, h_stack])
@@ -131,13 +141,17 @@ def resize_n_pad(img: np.array, target_width: int, target_height: int, padding: 
         tmp_img = resize_to_width(img, target_width)
 
         if padding == "white":
-            v_stack = np.ones((target_height-tmp_img.shape[0], tmp_img.shape[1]), dtype=np.uint8)
+            v_stack = np.ones(
+                (target_height - tmp_img.shape[0], tmp_img.shape[1]), dtype=np.uint8
+            )
         else:
-            v_stack = np.zeros((target_height-tmp_img.shape[0], tmp_img.shape[1]), dtype=np.uint8)
+            v_stack = np.zeros(
+                (target_height - tmp_img.shape[0], tmp_img.shape[1]), dtype=np.uint8
+            )
         v_stack *= 255
 
         out_img = np.vstack([v_stack, tmp_img])
-        #logging.info(f"Info -> equal ratio: {img.shape}, w_ratio: {width_ratio}, h_ratio: {height_ratio}")
+        # logging.info(f"Info -> equal ratio: {img.shape}, w_ratio: {width_ratio}, h_ratio: {height_ratio}")
 
     return cv2.resize(out_img, (target_width, target_height))
 
@@ -160,6 +174,7 @@ def clean_unicode_label(l, full_bracket_removal: bool = True):
     else:
         l = re.sub("[()]", "", l)
     return l
+
 
 def preprocess_wylie(line: str) -> str:
     line = line.replace("/ /", "/_/")
@@ -198,7 +213,6 @@ def read_data(
     for image_path, label_path in tqdm(
         zip(image_list, label_list), total=len(label_list), desc="reading labels"
     ):
-
         f = open(label_path, "r", encoding="utf-8")
         label = f.readline()
         label = clean_unicode_label(label)
@@ -207,7 +221,7 @@ def read_data(
             label = converter.toWylie(label)
             label = post_process_wylie(label)
 
-            if not "\\u" in label: # filter out improperly converted unicode signs
+            if not "\\u" in label:  # filter out improperly converted unicode signs
                 labels.append(label)
                 images.append(image_path)
 

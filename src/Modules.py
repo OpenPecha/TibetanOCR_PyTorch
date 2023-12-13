@@ -38,8 +38,7 @@ class OCRTrainer:
         output_dir: str = "Output",
         charset: str = DEFAULT_CHARSET,
         max_label_length: int = 240,
-        min_label_length: int = 30,
-        train_val_split_ratio: float = 0.2
+        min_label_length: int = 30
     ):
         self.model = None
         self.image_paths = image_paths
@@ -48,7 +47,6 @@ class OCRTrainer:
         self.min_label_length = min_label_length
         self.train_val_split = train_val_split
         self.batch_size = batch_size
-        self.train_val_split = train_val_split_ratio
         self.training_time = datetime.now()
         self.output_dir = self.create_output_dir(output_dir)
 
@@ -79,11 +77,11 @@ class OCRTrainer:
 
     def _init_datasets(self, split_ratio: float = 0.8):
         images, labels = shuffle_data(self.image_paths, self.label_paths)
-        train_images = images[: int(len(images) * split_ratio)]
-        train_labels = labels[: int(len(labels) * split_ratio)]
+        train_images = images[:int(len(images)*split_ratio)]
+        train_labels = labels[:int(len(labels)*split_ratio)]
 
-        valid_images = images[int(len(images) * split_ratio) :]
-        valid_labels = labels[int(len(labels) * split_ratio) :]
+        valid_images = images[int(len(images)*split_ratio):]
+        valid_labels = labels[int(len(labels)*split_ratio):]
 
         logging.info(
             f"Train Images: {len(train_images)}, Train Labels: {len(train_labels)}"

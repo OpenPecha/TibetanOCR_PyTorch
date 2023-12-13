@@ -23,11 +23,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_dir", type=str, required=True)
     parser.add_argument("--output_dir", type=str, required=False)
-    parser.add_argument("--charset", type=str, required=False)
+    parser.add_argument("--charset", type=str, required=False, default=DEFAULT_CHARSET)
+    parser.add_argument("--batch_size", type=int, required=False, default=64)
 
     args = parser.parse_args()
 
     input_dir = args.input_dir
+    charset = args.charset
+    batch_size = args.batch_size
 
     if not os.path.isdir:
         logging.error(f"Input directory '{input_dir}' is not a valid directory.")
@@ -49,5 +52,5 @@ if __name__ == "__main__":
         logging.error("Have you provided all data?")
         sys.exit(1)
 
-    ocr_trainer = OCRTrainer(images, labels, output_dir=output_dir)
+    ocr_trainer = OCRTrainer(images, labels, output_dir=output_dir, batch_size=batch_size, charset=charset)
     ocr_trainer.train()
