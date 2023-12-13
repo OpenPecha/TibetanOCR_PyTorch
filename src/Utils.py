@@ -161,29 +161,23 @@ def clean_unicode_label(l, full_bracket_removal: bool = True):
         l = re.sub("[()]", "", l)
     return l
 
-"""
-def post_process_wylie(l: str):
-    l = l.replace("\\u0f85", "&")
-    l = l.replace("\\u0f09", "ä")
-    l = l.replace("\\u0f13", "ö")
-    l = l.replace("\\u0f12", "ü")
-    l = l.replace("_", " ")
-    l = l.replace("  ", " ")
-    l = re.sub("[\[(].*?[\])]", "", l)
+def preprocess_wylie(line: str) -> str:
+    line = line.replace("/ /", "/_/")
+    line = line.replace("/ ", "/")
 
-    return l
-"""
+    return line
 
-def post_process_wylie(l):
-    l = l.replace("\\u0f85", "&")
-    l = l.replace("\\u0f09", "ä")
-    l = l.replace("\\u0f13", "ö")
-    l = l.replace("\\u0f12", "ü")
-    l = l.replace("_", " ")
-    l = l.replace("  ", " ")
-    l = l.replace(" ", "§")
-    l = re.sub("[\[(].*?[\])]", "", l)
-    return l
+
+def post_process_wylie(line: str) -> str:
+    line = line.replace("\\u0f85", "&")
+    line = line.replace("\\u0f09", "ä")
+    line = line.replace("\\u0f13", "ö")
+    line = line.replace("\\u0f12", "ü")
+    line = line.replace("  ", " ")
+    line = line.replace("_", "")
+    line = line.replace(" ", "§")
+    line = re.sub("[\[(].*?[\])]", "", line)
+    return line
 
 
 def read_data(

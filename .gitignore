@@ -163,7 +163,6 @@ cython_debug/
 # custom
 .idea
 Checkpoints/
+Dev
 Demo-RetrainNetwork.ipynb
-Datasets/KhyentseWangpo
-PyTorch-EasterOCR.ipynb
-TibOCR_Attention_PyTorch.ipynb
+Datasets
