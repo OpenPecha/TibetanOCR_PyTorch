@@ -34,7 +34,15 @@ class CTCDataset(Dataset):
         return len(self.images)
 
     def __getitem__(self, index):
-        image = cv2.imread(self.images[index], 0)  # grayscale
+        image = cv2.imread(self.images[index])  # grayscale
+
+        if self.augmentations is not None:
+            aug = self.augmentations(image=image)
+
+            image = aug["image"]
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        else:
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
         image = resize_n_pad(
             image,
