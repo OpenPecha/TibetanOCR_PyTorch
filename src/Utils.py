@@ -156,7 +156,7 @@ def resize_n_pad(
     return cv2.resize(out_img, (target_width, target_height))
 
 
-def clean_unicode_label(l, full_bracket_removal: bool = True):
+def preprocess_unicode(l, full_bracket_removal: bool = True):
     """
     Some preliminary clean-up rules for the Unicode text.
     - Note: () are just removed. This was valid in case of the Lhasa Kanjur.
@@ -165,9 +165,10 @@ def clean_unicode_label(l, full_bracket_removal: bool = True):
     In such cases set full_bracket_removal to True.
     """
 
-    l = re.sub("[\uf8f0]", " ", l)
-    l = re.sub("[\xa0]", "", l)
-    l = re.sub("[༌]", "་", l)  # replace triangle tsheg with regular
+    l = l.replace("\uf8f0", " ")
+    l = l.replace("\xa0", "")
+    l = l.replace("\u200d", "")
+    l = l.replace("༌", "་")  # replace triangle tsheg with regular
 
     if full_bracket_removal:
         l = re.sub("[\[(].*?[\])]", "", l)
@@ -176,23 +177,32 @@ def clean_unicode_label(l, full_bracket_removal: bool = True):
     return l
 
 
-def preprocess_wylie(line: str) -> str:
-    line = line.replace("/ /", "/_/")
-    line = line.replace("/ ", "/")
+def preprocess_wylie_label(label: str) -> str:
+    label = label.replace("༈", "!")
+    label = label.replace("༅", "#")
+    label = label.replace("|", "/") # TODO: let sb. verify this choice is ok
+    label = label.replace("/ /", "/_/")
+    label = label.replace("/ ", "/")
 
-    return line
+    return label
 
 
-def post_process_wylie(line: str) -> str:
-    line = line.replace("\\u0f85", "&")
-    line = line.replace("\\u0f09", "ä")
-    line = line.replace("\\u0f13", "ö")
-    line = line.replace("\\u0f12", "ü")
-    line = line.replace("  ", " ")
-    line = line.replace("_", "")
-    line = line.replace(" ", "§")
-    line = re.sub("[\[(].*?[\])]", "", line)
-    return line
+def postprocess_wylie_label(label: str) -> str:
+    label = label.replace("\\u0f85", "&")
+    label = label.replace("\\u0f09", "ä")
+    label = label.replace("\\u0f13", "ö")
+    label = label.replace("\\u0f12", "ü")
+    label = label.replace("\\u0fd3", "@")
+    label = label.replace("\\u0fd4", "#")
+    label = label.replace("\\u0f00", "oM")
+    label = label.replace("\\u0f7f", "}")
+    label = label.replace("*", " ")
+    label = label.replace("  ", " ")
+    label = label.replace("_", "")
+    label = label.replace(" ", "§") # specific encoding for the tsheg
+
+    label = re.sub("[\[(].*?[\])]", "", label)
+    return label
 
 
 def read_data(
@@ -200,13 +210,10 @@ def read_data(
     label_list: list,
     converter,
     min_label_length: int = 30,
-    max_label_length: int = 240,
+    max_label_length: int = 320,
 ) -> tuple[list[str], list[str]]:
     """
-    Reads all labels into memory, filter labels for min_label_length and max_label_length.
-    # TODO:
-    1) convert the training labels to wylie ahead of training and clean them up avoiding multiple checks while reading the dataset
-
+    Reads all labels into memory(!), filter labels for min_label_length and max_label_length.
     """
     labels = []
     images = []
@@ -215,11 +222,14 @@ def read_data(
     ):
         f = open(label_path, "r", encoding="utf-8")
         label = f.readline()
-        label = clean_unicode_label(label)
+        try:
+            label = preprocess_unicode(label)
+        except BaseException as e:
+            print(f"Failed to preprocess unicode label: {label_path}, {e}")
 
         if min_label_length < len(label) < max_label_length:
             label = converter.toWylie(label)
-            label = post_process_wylie(label)
+            label = postprocess_wylie_label(label)
 
             if not "\\u" in label:  # filter out improperly converted unicode signs
                 labels.append(label)
