@@ -6,7 +6,12 @@ import logging
 import random
 import numpy as np
 from tqdm import tqdm
+from enum import Enum
 
+
+class Labelformat(Enum):
+    t_unicode = 0
+    wylie = 1
 
 def create_dir(dir_path: str) -> None:
     try:
@@ -211,6 +216,7 @@ def read_data(
     converter,
     min_label_length: int = 30,
     max_label_length: int = 320,
+    format: Labelformat = Labelformat.t_unicode,
 ) -> tuple[list[str], list[str]]:
     """
     Reads all labels into memory(!), filter labels for min_label_length and max_label_length.
@@ -222,17 +228,27 @@ def read_data(
     ):
         f = open(label_path, "r", encoding="utf-8")
         label = f.readline()
-        try:
-            label = preprocess_unicode(label)
-        except BaseException as e:
-            print(f"Failed to preprocess unicode label: {label_path}, {e}")
 
-        if min_label_length < len(label) < max_label_length:
-            label = converter.toWylie(label)
+        if format == Labelformat.t_unicode:
+            try:
+                label = preprocess_unicode(label)
+            except BaseException as e:
+                print(f"Failed to preprocess unicode label: {label_path}, {e}")
+
+            if min_label_length < len(label) < max_label_length:
+                label = converter.toWylie(label)
+                label = postprocess_wylie_label(label)
+
+                if not "\\u" in label:  # filter out improperly converted unicode signs
+                    labels.append(label)
+                    images.append(image_path)
+        else:
+            label = preprocess_wylie_label(label)
             label = postprocess_wylie_label(label)
 
-            if not "\\u" in label:  # filter out improperly converted unicode signs
+            if min_label_length < len(label) < max_label_length:
                 labels.append(label)
                 images.append(image_path)
+
 
     return images, labels
