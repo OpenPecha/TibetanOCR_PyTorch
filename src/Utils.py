@@ -39,6 +39,47 @@ def validate_data(images_paths: list[str], label_paths: list[str]):
     return list(set(image_list) & set(transcriptions_list))
 
 
+
+def split_dataset(image_paths: list[str], label_paths: list[str], batch_size: int = 32, even_splits: bool = True, train_val_split: float = 0.8, val_test_split: float = 0.5):
+
+    """
+    Splitting the dataset evenly for the selected batch size.
+    """
+
+    batches = len(image_paths) // batch_size
+    train_batches = int(batches * train_val_split)
+
+    train_images = image_paths[:train_batches*batch_size]
+    train_labels = label_paths[:train_batches*batch_size]
+
+    assert len(train_images) % batch_size == 0 and len(train_labels) % batch_size == 0
+
+    val_test_images = image_paths[train_batches*batch_size:]
+    val_test_labels = label_paths[train_batches*batch_size:]
+    val_test_split = int(((len(val_test_images) * val_test_split) // batch_size) * batch_size)
+
+    val_images = val_test_images[:val_test_split]
+    val_labels = val_test_labels[:val_test_split]
+
+    test_images = val_test_images[val_test_split:]
+    test_labels = val_test_labels[val_test_split:]
+
+    if even_splits:
+        test_images = test_images[:(len(test_images) // batch_size)*batch_size]
+        test_labels = test_labels[:(len(test_images) // batch_size)*batch_size]
+
+    print(f"Train Images: {len(train_images)}, Train Labels: {len(train_labels)}")
+    print(f"Val Images: {len(val_images)}, Val Labels: {len(val_labels)}")
+    print(f"Test Images: {len(test_images)}, Test Labels: {len(test_labels)}")
+
+    assert len(train_images) % batch_size == 0 and len(train_labels) % batch_size == 0
+    assert len(val_images) % batch_size == 0 and len(val_labels) % batch_size == 0
+    assert len(test_images) % batch_size == 0 and len(test_labels) % batch_size == 0
+
+    return train_images, train_labels, val_images, val_labels, test_images, test_labels
+
+
+
 def get_train_data(summary_file: str, dataset_dir: str) -> tuple[list[str], list[str]]:
     print(dataset_dir)
     f = open(summary_file, "r")
