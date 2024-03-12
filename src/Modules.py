@@ -193,7 +193,8 @@ class EasterNetwork(Network):
         self.optimizer = torch.optim.Adam(
             self.model.parameters(), lr=self.learning_rate
         )
-        self.criterion = nn.CTCLoss(blank=0, reduction="sum", zero_infinity=True)
+        #self.criterion = nn.CTCLoss(blank=0, reduction="sum", zero_infinity=True)
+        self.criterion = CustomCTC()
 
         super().__init__(self.model)
 
@@ -527,3 +528,19 @@ class OCRTrainer:
         self.network.export_onnx(self.output_dir)
 
         logging.info(f"Training complete.")
+
+
+class CustomCTC(nn.Module):
+    def __init__(self, gamma: float = 0.5, alpha: int = 0.25, blank: int = 0):
+        super(CustomCTC, self).__init__()
+        self.gamma = gamma
+        self.alpha = alpha
+        self.blank = blank
+
+    def forward(self, log_probs, labels, input_lengths, target_lenghts):
+        ctc_loss = nn.CTCLoss(blank=self.blank, reduction='sum', zero_infinity=True)(log_probs, labels, input_lengths,
+                                                                                     target_lenghts)
+        p = torch.exp(-ctc_loss)
+        loss = self.alpha * (torch.pow((1 - p), self.gamma)) * ctc_loss
+
+        return loss
