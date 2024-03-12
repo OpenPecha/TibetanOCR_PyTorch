@@ -164,7 +164,7 @@ class CRNNNetwork(Network):
         )
         self.criterion = nn.CTCLoss(blank=0, reduction="sum", zero_infinity=True)
 
-        super(CRNNNetwork).__init__(self.model)
+        super().__init__(self.model)
 
     def fine_tune(self, epochs: int = 10):
         print("Fine tuning a CRNN...")
@@ -195,7 +195,7 @@ class EasterNetwork(Network):
         )
         self.criterion = nn.CTCLoss(blank=0, reduction="sum", zero_infinity=True)
 
-        super(EasterNetwork).__init__(self.model)
+        super().__init__(self.model)
 
     def forward(self, data):
         images, targets, target_lengths = data
@@ -279,7 +279,7 @@ class OCRTrainer:
         self.train_dataset, self.valid_dataset, self.test_dataset = (
             self._build_datasets()
         )
-        self.train_loader, self.valid_loader, test_loader = self._get_dataloaders()
+        self.train_loader, self.valid_loader, self.test_loader = self._get_dataloaders()
 
     def _create_output_dir(self, output_dir) -> str:
         output_dir = os.path.join(
@@ -509,7 +509,7 @@ class OCRTrainer:
             train_loss_history.append(train_loss)
 
             val_loss = self.network.evaluate(self.valid_loader)
-            logging.info(f"Epoch {epoch} => Val-Loss: {train_loss}")
+            logging.info(f"Epoch {epoch} => Val-Loss: {val_loss}")
             val_loss_history.append(val_loss)
 
             if best_loss is None:
