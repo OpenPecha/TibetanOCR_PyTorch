@@ -18,7 +18,7 @@ def create_dir(dir_path: str) -> None:
     try:
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
-            logging.error(f"Created output directory: {dir_path}")
+            logging.info(f"Created output directory: {dir_path}")
     except BaseException as e:
         logging.error(f"Failed to create directory: {e}")
 
@@ -40,6 +40,25 @@ def validate_data(images_paths: list[str], label_paths: list[str]):
 
     return list(set(image_list) & set(transcriptions_list))
 
+
+def read_distribution(file_path: str):
+    if os.path.isfile(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            content = json.loads(content)
+
+            if "train" in content and "validation" in content and "test" in content:
+                train_samples = content["train"]
+                valid_samples = content["validation"]
+                test_samples = content["test"]
+                return train_samples, valid_samples, test_samples
+            else:
+                logging.error(f"Data distribution is missing the required keys 'train' and 'validation' and 'test'.")
+                return None, None, None
+
+    else:
+        logging.error(f"Specified distribution file does not exist: {file_path}")
+        return None, None, None
 
 def split_dataset(
     image_paths: list[str],

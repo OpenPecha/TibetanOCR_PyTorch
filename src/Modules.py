@@ -15,13 +15,21 @@ import pyewts
 import logging
 from torch import nn
 from tqdm import tqdm
+from glob import glob
+from natsort import natsorted
 from datetime import datetime
 from torch.utils.data import DataLoader
 
 from config import N_DEFAULT_CHARSET
 from src.Datasets import CTCDataset, ctc_collate_fn
 from src.Models import VanillaCRNN, Easter2
-from src.Utils import create_dir, get_filename, shuffle_data, read_data
+from src.Utils import (
+    create_dir,
+    get_filename,
+    shuffle_data,
+    read_data,
+    read_distribution,
+)
 
 
 class Network:
@@ -126,6 +134,7 @@ class Network:
         logging.info(f"Onnx file exported to: {out_file}")
 
 
+
 class CRNNNetwork(Network):
     def __init__(
         self,
@@ -193,7 +202,7 @@ class EasterNetwork(Network):
         self.optimizer = torch.optim.Adam(
             self.model.parameters(), lr=self.learning_rate
         )
-        #self.criterion = nn.CTCLoss(blank=0, reduction="sum", zero_infinity=True)
+        # self.criterion = nn.CTCLoss(blank=0, reduction="sum", zero_infinity=True)
         self.criterion = CustomCTC()
 
         super().__init__(self.model)
@@ -317,7 +326,13 @@ class OCRTrainer:
         with open(out_file, "w", encoding="UTF-8") as f:
             json.dump(distribution, f, ensure_ascii=False, indent=1)
 
-        logging.info(f"Saved data distribution to: {out_file}.")
+        logging.info(f"Saved data distribution to: {out_file}")
+
+    def init_from_distribution(self, input_dir: str, distribution_file: str):
+        train_samples, validation_samples, test_samples = read_distribution(distribution_file)
+
+        images = natsorted(glob(f"{input_dir}/lines/*.jpg"))
+        transcriptions = natsorted(glob(f"{input_dir}/transcriptions/*.txt"))
 
     def _init_datasets(self, train_split: float = 0.8, val_test_split: float = 0.5):
         images, labels = shuffle_data(self.image_paths, self.label_paths)
@@ -445,15 +460,15 @@ class OCRTrainer:
             next(iter(test_loader))
 
         except BaseException as e:
-            logging.error(f"Failed to iterate over dataset: {e}.")
+            logging.error(f"Failed to iterate over dataset: {e}")
 
         return train_loader, valid_loader, test_loader
 
-    def _save_checkpoint(self, save_path: str):
-        chpt_file = f"{save_path}.pth"
+    def _save_checkpoint(self):
+        chpt_file = f"{self.output_dir}/{self.model_name}.pth"
         checkpoint = self.network.get_checkpoint()
         torch.save(checkpoint, chpt_file)
-        logging.info(f"Saved checkpoint to: {chpt_file}.")
+        logging.info(f"Saved checkpoint to: {chpt_file}")
 
     def _save_history(self, history: dict):
         out_file = os.path.join(self.output_dir, "history.txt")
@@ -463,12 +478,13 @@ class OCRTrainer:
 
         logging.info(f"Training history saved to: {out_file}.")
 
-    def _save_model_config(self, save_path: str):
+    def _save_model_config(self):
         _charset = self.charset
         out_file = os.path.join(self.output_dir, "model_config.json")
 
         network_config = {
-            "model": save_path,
+            "checkpoint": f"{self.model_name}.pth",
+            "onnx-model": f"{self.model_name}.onnx",
             "architecture": self.network.architecture,
             "input_width": self.image_width,
             "input_height": self.image_height,
@@ -483,7 +499,6 @@ class OCRTrainer:
 
     def train(self, epochs: int = 10):
         logging.info(f"Training network....")
-        save_path = os.path.join(self.output_dir, self.model_name)
 
         train_history = {}
         train_loss_history = []
@@ -515,17 +530,17 @@ class OCRTrainer:
 
             if best_loss is None:
                 best_loss = val_loss
-                self._save_checkpoint(save_path)
+                self._save_checkpoint()
 
             elif val_loss < best_loss:
-                self._save_checkpoint(save_path)
+                self._save_checkpoint()
 
         train_history["train_losses"] = train_loss_history
         train_history["val_losses"] = val_loss_history
 
         self._save_history(train_history)
-        self._save_model_config(save_path)
-        self.network.export_onnx(self.output_dir)
+        self.network.export_onnx(self.output_dir, model_name=self.model_name)
+        self._save_model_config()
 
         logging.info(f"Training complete.")
 
@@ -538,8 +553,9 @@ class CustomCTC(nn.Module):
         self.blank = blank
 
     def forward(self, log_probs, labels, input_lengths, target_lenghts):
-        ctc_loss = nn.CTCLoss(blank=self.blank, reduction='sum', zero_infinity=True)(log_probs, labels, input_lengths,
-                                                                                     target_lenghts)
+        ctc_loss = nn.CTCLoss(blank=self.blank, reduction="sum", zero_infinity=True)(
+            log_probs, labels, input_lengths, target_lenghts
+        )
         p = torch.exp(-ctc_loss)
         loss = self.alpha * (torch.pow((1 - p), self.gamma)) * ctc_loss
 
